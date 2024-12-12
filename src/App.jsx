@@ -1,57 +1,50 @@
 import React, { useState } from "react";
 import WebcamFeed from "./components/WebcamFeed";
 import SketchResult from "./components/SketchResult";
-import Controls from "./components/Controls";
-import { processSketch } from "./utils/processSketch";
+import { applyFilter } from "./utils/filters"; // Import filters logic
 import "./styles/App.css";
 
 const App = () => {
-  const [sketchImage, setSketchImage] = useState(null); // Stores the sketch result
-  const [isProcessing, setIsProcessing] = useState(false); // Indicates processing state
-  const [blurIntensity, setBlurIntensity] = useState(5); // Adjustable blur intensity
-  const [threshold, setThreshold] = useState(180); // Adjustable brightness threshold
+  const [filterType, setFilterType] = useState("sketch"); // Selected filter
+  const [sketchImage, setSketchImage] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleCapture = async (imageSrc) => {
     setIsProcessing(true);
     try {
-      const sketch = await processSketch(imageSrc, blurIntensity, threshold);
-      setSketchImage(sketch); // Set processed image as the sketch
+      const filteredImage = await applyFilter(imageSrc, filterType);
+      setSketchImage(filteredImage);
     } catch (error) {
-      console.error("Error processing sketch:", error);
+      console.error("Error applying filter:", error);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleClear = () => {
-    setSketchImage(null); // Clear the current sketch
-  };
-
-  const handleDownload = () => {
-    const link = document.createElement("a");
-    link.href = sketchImage;
-    link.download = "sketch.png";
-    link.click();
-  };
+  const handleClear = () => setSketchImage(null);
 
   return (
     <div className="app">
       <h1>Webcam Sketch App</h1>
       <WebcamFeed onCapture={handleCapture} />
-      <Controls
-        blurIntensity={blurIntensity}
-        setBlurIntensity={setBlurIntensity}
-        threshold={threshold}
-        setThreshold={setThreshold}
-      />
+      <div className="filter-selector">
+        <label htmlFor="filter">Choose a Filter:</label>
+        <select
+          id="filter"
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+        >
+          <option value="sketch">Pencil Sketch</option>
+          <option value="watercolor">Watercolor</option>
+          <option value="cartoon">Cartoon</option>
+          <option value="oil">Oil Painting</option>
+          <option value="popart">Pop Art</option>
+          <option value="sepia">Sepia</option>
+        </select>
+      </div>
       {isProcessing && <p>Processing...</p>}
-      {sketchImage && (
-        <div className="controls">
-          <SketchResult sketchImage={sketchImage} />
-          <button onClick={handleClear}>Clear</button>
-          <button onClick={handleDownload}>Download</button>
-        </div>
-      )}
+      {sketchImage && <SketchResult sketchImage={sketchImage} />}
+      {sketchImage && <button onClick={handleClear}>Clear</button>}
     </div>
   );
 };
